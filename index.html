@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Decentralized Voting Platform</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@600;700;800&display=swap"
+        rel="stylesheet">
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="container">
+
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <h1 class="logo">
+                    <span class="logo-icon">🗳️</span>
+                    Decentralized Voting
+                </h1>
+                <button class="btn-connect" onclick="connectWallet()">
+                    <span class="wallet-icon">🦊</span>
+                    Connect Wallet
+                </button>
+            </div>
+        </header>
+
+        <!-- User Info -->
+        <div id="userInfo" class="user-info hidden">
+            <div class="user-card">
+                <div class="user-details">
+                    <p class="user-label">Connected Wallet</p>
+                    <p id="account" class="user-address"></p>
+                </div>
+                <div class="role-badge donor">Voter</div>
+            </div>
+        </div>
+
+        <!-- Candidates Section -->
+        <section class="action-section">
+            <div class="action-card">
+                <h2 class="section-title">Candidates</h2>
+                <p class="section-description">
+                    Cast your vote securely on the blockchain
+                </p>
+
+                <ul id="candidateList" class="candidate-list">
+                    <li class="empty-state">
+                        Connect your wallet to load candidates
+                    </li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p class="footer-text">
+                Developed by <strong>Md Irfan Ahmed</strong>
+            </p>
+        </footer>
+
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/web3@1.10.0/dist/web3.min.js"></script>
+    <script src="app.js"></script>
+</body>
+
+</html>
