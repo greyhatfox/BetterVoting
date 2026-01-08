@@ -2,7 +2,7 @@ let web3;
 let contract;
 let account;
 
-const contractAddress = "0x8A6126b33DA6109F84f102cF01DdF515e61F220A";
+const contractAddress = "0xCed83B412eeBa490439AcdBa3AA12b1a3CdA7EF5";
 
 const abi = [
     {
@@ -11,53 +11,53 @@ const abi = [
         "type": "constructor"
     },
     {
-        "inputs": [{"internalType":"string","name":"_name","type":"string"}],
-        "name":"addCandidate",
-        "outputs":[],
-        "stateMutability":"nonpayable",
-        "type":"function"
+        "inputs": [{ "internalType": "string", "name": "_name", "type": "string" }],
+        "name": "addCandidate",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
     },
     {
-        "inputs":[{"internalType":"uint256","name":"_candidateId","type":"uint256"}],
-        "name":"vote",
-        "outputs":[],
-        "stateMutability":"nonpayable",
-        "type":"function"
+        "inputs": [{ "internalType": "uint256", "name": "_candidateId", "type": "uint256" }],
+        "name": "vote",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
     },
     {
-        "inputs":[{"internalType":"uint256","name":"_id","type":"uint256"}],
-        "name":"getCandidate",
-        "outputs":[
-            {"internalType":"string","name":"","type":"string"},
-            {"internalType":"uint256","name":"","type":"uint256"}
+        "inputs": [{ "internalType": "uint256", "name": "_id", "type": "uint256" }],
+        "name": "getCandidate",
+        "outputs": [
+            { "internalType": "string", "name": "", "type": "string" },
+            { "internalType": "uint256", "name": "", "type": "uint256" }
         ],
-        "stateMutability":"view",
-        "type":"function"
+        "stateMutability": "view",
+        "type": "function"
     },
     {
-        "inputs":[{"internalType":"uint256","name":"","type":"uint256"}],
-        "name":"candidates",
-        "outputs":[
-            {"internalType":"uint256","name":"id","type":"uint256"},
-            {"internalType":"string","name":"name","type":"string"},
-            {"internalType":"uint256","name":"voteCount","type":"uint256"}
+        "inputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+        "name": "candidates",
+        "outputs": [
+            { "internalType": "uint256", "name": "id", "type": "uint256" },
+            { "internalType": "string", "name": "name", "type": "string" },
+            { "internalType": "uint256", "name": "voteCount", "type": "uint256" }
         ],
-        "stateMutability":"view",
-        "type":"function"
+        "stateMutability": "view",
+        "type": "function"
     },
     {
-        "inputs":[{"internalType":"address","name":"","type":"address"}],
-        "name":"hasVoted",
-        "outputs":[{"internalType":"bool","name":"","type":"bool"}],
-        "stateMutability":"view",
-        "type":"function"
+        "inputs": [{ "internalType": "address", "name": "", "type": "address" }],
+        "name": "hasVoted",
+        "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+        "stateMutability": "view",
+        "type": "function"
     },
     {
-        "inputs":[],
-        "name":"candidatesCount",
-        "outputs":[{"internalType":"uint256","name":"","type":"uint256"}],
-        "stateMutability":"view",
-        "type":"function"
+        "inputs": [],
+        "name": "candidatesCount",
+        "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+        "stateMutability": "view",
+        "type": "function"
     }
 ];
 
@@ -76,10 +76,13 @@ async function connectWallet() {
     document.getElementById("userInfo").classList.remove("hidden");
 
     contract = new web3.eth.Contract(abi, contractAddress);
-    loadCandidates();
+
+    // Check if user has already voted
+    const votedFor = await contract.methods.hasVoted(account).call();
+    loadCandidates(votedFor);
 }
 
-async function loadCandidates() {
+async function loadCandidates(votedFor = null) {
     const count = await contract.methods.candidatesCount().call();
     const list = document.getElementById("candidateList");
     list.innerHTML = "";
@@ -89,19 +92,46 @@ async function loadCandidates() {
         return;
     }
 
+    // If votedFor is null, check again
+    if (votedFor === null && account) {
+        votedFor = await contract.methods.hasVoted(account).call();
+    }
+
+    const hasVoted = votedFor && votedFor != "0";
+
     for (let i = 1; i <= count; i++) {
         const candidate = await contract.methods.candidates(i).call();
 
         const li = document.createElement("li");
         li.className = "candidate-item";
 
+        // Determine if this is the candidate the user voted for
+        const isVotedFor = hasVoted && candidate.id == votedFor;
+        const isDisabled = hasVoted && !isVotedFor;
+
+        // Show vote count only if user has voted
+        const voteCountHtml = hasVoted
+            ? `<div class="vote-count">${candidate.voteCount} votes</div>`
+            : `<div class="vote-count">Vote to reveal results</div>`;
+
+        // Button text and class
+        let buttonClass = "vote-btn";
+        let buttonText = "Vote";
+
+        if (isVotedFor) {
+            buttonClass += " voted";
+            buttonText = "Voted";
+        } else if (isDisabled) {
+            buttonClass += " disabled";
+        }
+
         li.innerHTML = `
             <div>
                 <div class="candidate-name">${candidate.name}</div>
-                <div class="vote-count">${candidate.voteCount} votes</div>
+                ${voteCountHtml}
             </div>
-            <button class="vote-btn" onclick="vote(${candidate.id})">
-                Vote
+            <button class="${buttonClass}" onclick="vote(${candidate.id})" ${isDisabled ? 'disabled' : ''}>
+                ${buttonText}
             </button>
         `;
 
@@ -112,7 +142,8 @@ async function loadCandidates() {
 async function vote(id) {
     try {
         await contract.methods.vote(id).send({ from: account });
-        loadCandidates();
+        // Reload candidates with the voted candidate ID
+        loadCandidates(id);
     } catch (err) {
         alert(err.message);
     }
