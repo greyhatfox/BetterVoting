@@ -80,6 +80,71 @@ async function connectWallet() {
     // Check if user has already voted
     const votedFor = await contract.methods.hasVoted(account).call();
     loadCandidates(votedFor);
+    loadLeaderboard(votedFor);
+}
+
+async function loadLeaderboard(votedFor = null) {
+    const count = await contract.methods.candidatesCount().call();
+    const leaderboard = document.getElementById("leaderboard");
+    leaderboard.innerHTML = "";
+
+    if (count == 0) {
+        leaderboard.innerHTML = `<div class="empty-state">No candidates available</div>`;
+        return;
+    }
+
+    // If votedFor is null, check again
+    if (votedFor === null && account) {
+        votedFor = await contract.methods.hasVoted(account).call();
+    }
+
+    const hasVoted = votedFor && votedFor != "0";
+
+    // Fetch all candidates
+    const candidates = [];
+    let totalVotes = 0;
+
+    for (let i = 1; i <= count; i++) {
+        const candidate = await contract.methods.candidates(i).call();
+        candidates.push(candidate);
+        totalVotes += parseInt(candidate.voteCount);
+    }
+
+    // Sort by vote count (descending)
+    candidates.sort((a, b) => parseInt(b.voteCount) - parseInt(a.voteCount));
+
+    // Display leaderboard
+    candidates.forEach((candidate, index) => {
+        const rank = index + 1;
+        const voteCount = parseInt(candidate.voteCount);
+        const percentage = totalVotes > 0 ? ((voteCount / totalVotes) * 100).toFixed(1) : 0;
+
+        let rankClass = "rank-other";
+        if (rank === 1) rankClass = "rank-1";
+        else if (rank === 2) rankClass = "rank-2";
+        else if (rank === 3) rankClass = "rank-3";
+
+        const item = document.createElement("div");
+        item.className = "leaderboard-item";
+        item.style.setProperty('--progress', `${percentage}%`);
+
+        // Show vote count only if user has voted
+        const voteDisplay = hasVoted
+            ? `<span>${voteCount} votes</span><span class="vote-percentage">(${percentage}%)</span>`
+            : `<span>Vote to reveal</span>`;
+
+        item.innerHTML = `
+            <div class="rank-badge ${rankClass}">${rank}</div>
+            <div class="leaderboard-info">
+                <div class="leaderboard-name">${candidate.name}</div>
+                <div class="leaderboard-votes">
+                    ${voteDisplay}
+                </div>
+            </div>
+        `;
+
+        leaderboard.appendChild(item);
+    });
 }
 
 async function loadCandidates(votedFor = null) {
@@ -144,6 +209,7 @@ async function vote(id) {
         await contract.methods.vote(id).send({ from: account });
         // Reload candidates with the voted candidate ID
         loadCandidates(id);
+        loadLeaderboard(id);
     } catch (err) {
         alert(err.message);
     }
