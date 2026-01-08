@@ -86,10 +86,12 @@ async function connectWallet() {
 async function loadLeaderboard(votedFor = null) {
     const count = await contract.methods.candidatesCount().call();
     const leaderboard = document.getElementById("leaderboard");
+    const leaderboardSection = document.getElementById("leaderboardSection");
     leaderboard.innerHTML = "";
 
     if (count == 0) {
         leaderboard.innerHTML = `<div class="empty-state">No candidates available</div>`;
+        leaderboardSection.classList.add("hidden");
         return;
     }
 
@@ -99,6 +101,15 @@ async function loadLeaderboard(votedFor = null) {
     }
 
     const hasVoted = votedFor && votedFor != "0";
+
+    // Only show leaderboard if user has voted
+    if (!hasVoted) {
+        leaderboardSection.classList.add("hidden");
+        return;
+    }
+
+    // Show leaderboard section
+    leaderboardSection.classList.remove("hidden");
 
     // Fetch all candidates
     const candidates = [];
@@ -128,17 +139,12 @@ async function loadLeaderboard(votedFor = null) {
         item.className = "leaderboard-item";
         item.style.setProperty('--progress', `${percentage}%`);
 
-        // Show vote count only if user has voted
-        const voteDisplay = hasVoted
-            ? `<span>${voteCount} votes</span><span class="vote-percentage">(${percentage}%)</span>`
-            : `<span>Vote to reveal</span>`;
-
         item.innerHTML = `
             <div class="rank-badge ${rankClass}">${rank}</div>
             <div class="leaderboard-info">
                 <div class="leaderboard-name">${candidate.name}</div>
                 <div class="leaderboard-votes">
-                    ${voteDisplay}
+                    <span>${voteCount} votes</span><span class="vote-percentage">(${percentage}%)</span>
                 </div>
             </div>
         `;
